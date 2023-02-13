@@ -6,6 +6,7 @@ package json
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -494,4 +495,24 @@ func TestHTTPDecoding(t *testing.T) {
 	if err != io.EOF {
 		t.Errorf("err = %v; want io.EOF", err)
 	}
+}
+
+type Struct struct {
+	Field1 string
+}
+
+func (s Struct) IsZero() bool {
+	return true
+}
+
+func TestEncoderFerenc(t *testing.T) {
+	s := Struct{}
+	var buf bytes.Buffer
+	enc := NewEncoder(&buf)
+	enc.SetOmitemptyOnIsZero(true)
+	err := enc.Encode(s)
+	if err != nil {
+		t.Error(err)
+	}
+	fmt.Println(buf.String())
 }

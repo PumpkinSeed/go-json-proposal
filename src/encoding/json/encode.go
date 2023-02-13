@@ -363,6 +363,8 @@ type encOpts struct {
 	quoted bool
 	// escapeHTML causes '<', '>', and '&' to be escaped in JSON strings.
 	escapeHTML bool
+
+	omitemptyOnIsZero bool
 }
 
 type encoderFunc func(e *encodeState, v reflect.Value, opts encOpts)
@@ -727,8 +729,19 @@ type structFields struct {
 	nameIndex map[string]int
 }
 
+type IsZeroDescriptor interface {
+	IsZero() bool
+}
+
 func (se structEncoder) encode(e *encodeState, v reflect.Value, opts encOpts) {
 	next := byte('{')
+	if opts.omitemptyOnIsZero {
+		iz := v.Interface().(IsZeroDescriptor)
+		if iz.IsZero() {
+			goto StructEnd
+		}
+	}
+
 FieldLoop:
 	for i := range se.fields.list {
 		f := &se.fields.list[i]
@@ -758,6 +771,7 @@ FieldLoop:
 		opts.quoted = f.quoted
 		f.encoder(e, fv, opts)
 	}
+StructEnd:
 	if next == '{' {
 		e.WriteString("{}")
 	} else {
